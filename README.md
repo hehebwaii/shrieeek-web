@@ -22,7 +22,7 @@ An interactive digital superhero character card system built for IEEE events. Pa
 
 ### 1. Clone & Install
 ```bash
-git clone https://github.com/YOUR_USERNAME/shrieeek-web.git
+git clone https://github.com/hehebwaii/shrieeek-web.git
 cd shrieeek-web
 npm install
 ```
