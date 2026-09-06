@@ -369,7 +369,7 @@ export default function AdminPage() {
         {/* Global Toolbar */}
         <div className="flex items-center flex-wrap gap-2.5">
           <button
-            onClick={fetchAdminData}
+            onClick={() => fetchAdminData()}
             disabled={loading}
             className="flex items-center gap-2 px-3.5 py-2.5 bg-[#1C1C1C] hover:bg-[#252525] active:scale-95 border border-[#3A3A3A] hover:border-brand-yellow rounded-xl text-xs font-mono text-brand-yellow font-bold transition-all shadow-sm"
             title="Refresh Live Data"
