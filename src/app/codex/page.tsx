@@ -146,6 +146,45 @@ export default function AllianceCodexPage() {
             </span>
           </div>
         </div>
+
+        {/* Milestone Achievement Badges Track */}
+        <div className="mt-3 pt-2.5 border-t border-[#252525]">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-[10px] font-mono font-bold uppercase text-brand-muted flex items-center gap-1">
+              <Award className="w-3.5 h-3.5 text-brand-yellow" /> ALLIANCE MILESTONES
+            </span>
+            <span className="text-[10px] font-mono text-brand-yellow">
+              {[1, 5, 10, 25, 50].filter(m => codex.length >= m).length} / 5 UNLOCKED
+            </span>
+          </div>
+          <div className="grid grid-cols-5 gap-1.5 text-center">
+            {[
+              { count: 1, label: "1st Contact", icon: "🎯" },
+              { count: 5, label: "Scout (5)", icon: "🤝" },
+              { count: 10, label: "Squad (10)", icon: "⚡" },
+              { count: 25, label: "Vanguard (25)", icon: "🛡️" },
+              { count: 50, label: "Legend (50)", icon: "🌟" },
+            ].map((milestone) => {
+              const isUnlocked = codex.length >= milestone.count;
+              return (
+                <div
+                  key={milestone.count}
+                  className={`p-1.5 rounded-xl border flex flex-col items-center justify-center transition-all ${
+                    isUnlocked
+                      ? "bg-[#222] border-brand-yellow text-white shadow-[0_0_8px_rgba(243,240,0,0.2)]"
+                      : "bg-[#111] border-[#222] text-gray-600 opacity-60"
+                  }`}
+                  title={`${milestone.label}: Scan ${milestone.count} heroes`}
+                >
+                  <span className="text-base leading-none mb-1">{milestone.icon}</span>
+                  <span className={`text-[8px] font-mono font-bold uppercase leading-tight ${isUnlocked ? "text-brand-yellow" : "text-gray-500"}`}>
+                    {milestone.label}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
       </div>
 
       {/* Search & Filter Bar */}
