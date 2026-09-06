@@ -513,6 +513,205 @@ export async function recordScanEvent(
   };
 }
 
+export async function hasAlreadyScanned(scannerId: string, scannedId: string): Promise<boolean> {
+  if (scannerId === scannedId) return true;
+  if (supabase) {
+    const { data } = await supabase
+      .from("scan_events")
+      .select("id")
+      .eq("scanner_id", scannerId)
+      .eq("scanned_id", scannedId)
+      .maybeSingle();
+    return Boolean(data);
+  }
+  const pairKey = `${scannerId}:${scannedId}`;
+  return scanPairSet.has(pairKey);
+}
+
+export async function recordDuelScanEvent(
+  scannerId: string,
+  scannedId: string,
+  scannerTactic: ClashTactic,
+  scannedTactic: ClashTactic
+): Promise<{
+  success: boolean;
+  error?: string;
+  scanner?: Participant;
+  scanned?: Participant;
+  scannerResult?: ClashResult;
+  scannedResult?: ClashResult;
+  newLevelScanner?: number;
+  newLevelScanned?: number;
+}> {
+  const config = await getEventConfig();
+  if (!config.is_event_active) {
+    return { success: false, error: "Event scanning is currently paused by organizers." };
+  }
+
+  if (scannerId === scannedId) {
+    return { success: false, error: "Self-scan blocked: You cannot duel yourself!" };
+  }
+
+  const scanner = await getParticipantById(scannerId);
+  const scanned = await getParticipantById(scannedId);
+
+  if (!scanner || !scanned) {
+    return { success: false, error: "Participant not found." };
+  }
+
+  const scannerHero = getCharacterById(scanner.character_id);
+  const scannedHero = getCharacterById(scanned.character_id);
+
+  // Determine outcome
+  let scannerOutcome: "VICTORY" | "DRAW" | "DEFEAT" = "DRAW";
+  let scannedOutcome: "VICTORY" | "DRAW" | "DEFEAT" = "DRAW";
+
+  if (scannerTactic === scannedTactic) {
+    scannerOutcome = "DRAW";
+    scannedOutcome = "DRAW";
+  } else if (
+    (scannerTactic === "STRIKE" && scannedTactic === "SHIELD") ||
+    (scannerTactic === "SHIELD" && scannedTactic === "BLITZ") ||
+    (scannerTactic === "BLITZ" && scannedTactic === "STRIKE")
+  ) {
+    scannerOutcome = "VICTORY";
+    scannedOutcome = "DEFEAT";
+  } else {
+    scannerOutcome = "DEFEAT";
+    scannedOutcome = "VICTORY";
+  }
+
+  const scannerXp = scannerOutcome === "VICTORY" ? 15 : 10;
+  const scannedXp = scannedOutcome === "VICTORY" ? 15 : 10;
+
+  const scannerResult: ClashResult = {
+    scannerTactic,
+    opponentTactic: scannedTactic,
+    outcome: scannerOutcome,
+    bonusXp: scannerOutcome === "VICTORY" ? 5 : 0,
+    totalXpAwarded: scannerXp,
+    scannerHero: scannerHero.heroTitle,
+    opponentHero: scannedHero.heroTitle,
+    specialMove: scannerHero.specialMove,
+    impactPhrase:
+      scannerOutcome === "VICTORY"
+        ? `CRITICAL CLASH! ${scannerHero.specialMove} breached ${scannedHero.heroTitle}'s guard! +15 XP!`
+        : scannerOutcome === "DRAW"
+        ? `ENERGY DEFLECTION! Both titans clashed evenly. +10 XP awarded.`
+        : `DEFENSIVE PARRY! ${scannedHero.heroTitle} defended the surge. +10 XP awarded.`,
+  };
+
+  const scannedResult: ClashResult = {
+    scannerTactic: scannedTactic,
+    opponentTactic: scannerTactic,
+    outcome: scannedOutcome,
+    bonusXp: scannedOutcome === "VICTORY" ? 5 : 0,
+    totalXpAwarded: scannedXp,
+    scannerHero: scannedHero.heroTitle,
+    opponentHero: scannerHero.heroTitle,
+    specialMove: scannedHero.specialMove,
+    impactPhrase:
+      scannedOutcome === "VICTORY"
+        ? `TACTICAL COUNTER! ${scannedHero.specialMove} outmaneuvered ${scannerHero.heroTitle}! +15 XP!`
+        : scannedOutcome === "DRAW"
+        ? `ENERGY DEFLECTION! Both titans clashed evenly. +10 XP awarded.`
+        : `GUARD BREACHED! ${scannerHero.heroTitle} landed a powerful strike. +10 XP awarded.`,
+  };
+
+  if (supabase) {
+    const scanEventId = `scan_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+    const { error: insertError } = await supabase.from("scan_events").insert({
+      id: scanEventId,
+      scanner_id: scannerId,
+      scanned_id: scannedId,
+      xp_awarded: scannerXp,
+      created_at: new Date().toISOString(),
+    });
+
+    if (insertError) {
+      if (insertError.code === "23505" || insertError.message.includes("unique")) {
+        return { success: false, error: `You have already scanned ${scanned.display_name}'s QR code!` };
+      }
+      return { success: false, error: insertError.message };
+    }
+
+    const newXpScanner = scanner.xp + scannerXp;
+    const newLevelScanner = getLevelFromXp(newXpScanner);
+    const updatedScanner = await updateParticipant(scannerId, {
+      xp: newXpScanner,
+      level: newLevelScanner,
+      last_scan_at: new Date().toISOString(),
+    });
+
+    const newXpScanned = scanned.xp + scannedXp;
+    const newLevelScanned = getLevelFromXp(newXpScanned);
+    const updatedScanned = await updateParticipant(scannedId, {
+      xp: newXpScanned,
+      level: newLevelScanned,
+      last_scan_at: new Date().toISOString(),
+    });
+
+    return {
+      success: true,
+      scanner: updatedScanner || scanner,
+      scanned: updatedScanned || scanned,
+      scannerResult,
+      scannedResult,
+      newLevelScanner,
+      newLevelScanned,
+    };
+  }
+
+  const pairKey = `${scannerId}:${scannedId}`;
+  if (scanPairSet.has(pairKey)) {
+    return {
+      success: false,
+      error: `You have already scanned ${scanned.display_name}'s card! Repeat scans do not award XP.`,
+    };
+  }
+  scanPairSet.add(pairKey);
+
+  const db = getMemoryDb();
+  const newScanEvent: ScanEvent = {
+    id: `scan_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+    scanner_id: scannerId,
+    scanned_id: scannedId,
+    xp_awarded: scannerXp,
+    created_at: new Date().toISOString(),
+    clash_outcome: scannerOutcome,
+  };
+  db.scanEvents.push(newScanEvent);
+
+  const newXpScanner = scanner.xp + scannerXp;
+  const newLevelScanner = getLevelFromXp(newXpScanner);
+  const scannerIndex = db.participants.findIndex((p) => p.id === scannerId);
+  if (scannerIndex !== -1) {
+    db.participants[scannerIndex].xp = newXpScanner;
+    db.participants[scannerIndex].level = newLevelScanner;
+    db.participants[scannerIndex].last_scan_at = new Date().toISOString();
+  }
+
+  const newXpScanned = scanned.xp + scannedXp;
+  const newLevelScanned = getLevelFromXp(newXpScanned);
+  const scannedIndex = db.participants.findIndex((p) => p.id === scannedId);
+  if (scannedIndex !== -1) {
+    db.participants[scannedIndex].xp = newXpScanned;
+    db.participants[scannedIndex].level = newLevelScanned;
+    db.participants[scannedIndex].last_scan_at = new Date().toISOString();
+  }
+  persistLocalDbAsync();
+
+  return {
+    success: true,
+    scanner: db.participants[scannerIndex],
+    scanned: db.participants[scannedIndex],
+    scannerResult,
+    scannedResult,
+    newLevelScanner,
+    newLevelScanned,
+  };
+}
+
 export async function getEventConfig(): Promise<EventConfig> {
   if (supabase) {
     const { data } = await supabase

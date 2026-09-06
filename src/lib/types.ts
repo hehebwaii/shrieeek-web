@@ -76,3 +76,20 @@ export interface LevelTier {
   borderClass: string;
 }
 
+export interface DuelSession {
+  duelId: string;
+  scannerId: string;
+  scannedId: string;
+  scannerName: string;
+  scannerHero: string;
+  scannedName: string;
+  scannedHero: string;
+  scannerTactic?: ClashTactic;
+  scannedTactic?: ClashTactic;
+  status: "WAITING_CHOICES" | "RESOLVED" | "EXPIRED";
+  scannerResult?: ClashResult;
+  scannedResult?: ClashResult;
+  createdAt: number;
+  expiresAt: number;
+}
+

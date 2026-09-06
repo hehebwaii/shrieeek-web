@@ -14,7 +14,15 @@ export const syncEmitter: SyncEmitter =
 syncEmitter.setMaxListeners(500);
 
 export function broadcastUpdate(
-  type: "CONFIG_CHANGE" | "PARTICIPANT_RESET" | "SCAN_AWARDED" | "ROSTER_UPDATED" | "ANNOUNCEMENT",
+  type:
+    | "CONFIG_CHANGE"
+    | "PARTICIPANT_RESET"
+    | "SCAN_AWARDED"
+    | "ROSTER_UPDATED"
+    | "ANNOUNCEMENT"
+    | "DUEL_START"
+    | "DUEL_PLAYER_READY"
+    | "DUEL_RESOLVED",
   payload?: any
 ) {
   syncEmitter.emit("update", {

@@ -2,13 +2,15 @@
 
 import React, { useState, useEffect } from "react";
 import { ClashTactic, ClashResult } from "@/lib/types";
-import { Zap, Shield, Swords, Sparkles, Award, ArrowRight, RotateCcw } from "lucide-react";
+import { Zap, Shield, Swords, Sparkles, Award, ArrowRight, RotateCcw, Check } from "lucide-react";
 
 interface HeroClashModalProps {
   scannerName: string;
   scannerHero: string;
   opponentName: string;
   opponentHero: string;
+  role?: "CHALLENGER" | "DEFENDER";
+  opponentReady?: boolean;
   onSelectTactic: (tactic: ClashTactic) => void;
   clashResult?: ClashResult | null;
   loading?: boolean;
@@ -20,16 +22,18 @@ export function HeroClashModal({
   scannerHero,
   opponentName,
   opponentHero,
+  role = "CHALLENGER",
+  opponentReady = false,
   onSelectTactic,
   clashResult,
   loading = false,
   onClose,
 }: HeroClashModalProps) {
   const [selectedTactic, setSelectedTactic] = useState<ClashTactic | null>(null);
-  const [timeLeft, setTimeLeft] = useState(6);
+  const [timeLeft, setTimeLeft] = useState(10);
   const [showAnimation, setShowAnimation] = useState(false);
 
-  // Auto-countdown
+  // Auto-countdown (10 seconds)
   useEffect(() => {
     if (selectedTactic || clashResult) return;
 
@@ -52,7 +56,7 @@ export function HeroClashModal({
     onSelectTactic(tactic);
   };
 
-  const getTacticIcon = (tactic: ClashTactic) => {
+  const getTacticIcon = (tactic?: ClashTactic) => {
     switch (tactic) {
       case "STRIKE":
         return <Swords className="w-5 h-5 text-red-400" />;
@@ -60,8 +64,12 @@ export function HeroClashModal({
         return <Shield className="w-5 h-5 text-cyan-400" />;
       case "BLITZ":
         return <Zap className="w-5 h-5 text-brand-yellow" />;
+      default:
+        return null;
     }
   };
+
+  const isChallenger = role === "CHALLENGER";
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/85 backdrop-blur-md animate-fade-in overflow-y-auto">
@@ -72,22 +80,36 @@ export function HeroClashModal({
         {/* Top Header */}
         <div className="relative z-10 mb-4">
           <div className="inline-block px-3 py-0.5 bg-brand-red text-white font-comic text-xs uppercase tracking-widest comic-tag border border-black shadow-comic-sm mb-1.5">
-            <span className="comic-tag-inner">COMBAT ENGAGEMENT HUD</span>
+            <span className="comic-tag-inner">
+              {isChallenger ? "⚔️ LIVE COMBAT DUEL" : "🛡️ DEFENSE DUEL CHALLENGE"}
+            </span>
           </div>
           <h2 className="font-comic text-3xl sm:text-4xl text-brand-yellow uppercase tracking-wide drop-shadow-[2px_2px_0px_#000]">
             ⚡ HERO POWER CLASH ⚡
           </h2>
           <p className="text-[11px] font-mono text-brand-muted">
-            Choose your combat stance to breach opponent defenses for +5 BONUS XP!
+            {isChallenger
+              ? "You initiated a live duel! Select your combat stance to win bonus XP!"
+              : "A challenger has scanned your card! Pick your defense stance!"}
           </p>
         </div>
 
         {/* VS Hero Showcase Arena */}
         <div className="relative z-10 grid grid-cols-2 gap-2 sm:gap-3 bg-[#101010] border-2 border-[#282828] p-3 rounded-2xl mb-4">
-          {/* Scanner Side (You) */}
-          <div className="bg-[#1C1A00] border-2 border-brand-yellow/80 rounded-xl p-2.5 flex flex-col items-center">
-            <span className="text-[9px] font-mono uppercase tracking-widest text-brand-yellow font-bold mb-1">
-              CHALLENGER (YOU)
+          {/* Challenger Side */}
+          <div
+            className={`border-2 rounded-xl p-2.5 flex flex-col items-center ${
+              isChallenger
+                ? "bg-[#1C1A00] border-brand-yellow/80"
+                : "bg-[#141414] border-[#333333]"
+            }`}
+          >
+            <span
+              className={`text-[9px] font-mono uppercase tracking-widest font-bold mb-1 ${
+                isChallenger ? "text-brand-yellow" : "text-brand-muted"
+              }`}
+            >
+              {isChallenger ? "CHALLENGER (YOU)" : "CHALLENGER"}
             </span>
             <div className="font-comic text-lg text-white uppercase truncate w-full">
               {scannerHero}
@@ -95,10 +117,27 @@ export function HeroClashModal({
             <div className="text-[11px] font-sans text-brand-muted truncate w-full">
               {scannerName}
             </div>
-            {selectedTactic && (
+            {isChallenger && selectedTactic && (
               <div className="mt-2 flex items-center gap-1 text-[10px] font-mono font-bold text-brand-yellow bg-black/60 px-2 py-0.5 rounded border border-brand-yellow/40">
                 {getTacticIcon(selectedTactic)}
                 <span>{selectedTactic}</span>
+              </div>
+            )}
+            {!isChallenger && clashResult && (
+              <div className="mt-2 flex items-center gap-1 text-[10px] font-mono font-bold text-brand-yellow bg-black/60 px-2 py-0.5 rounded border border-brand-yellow/40">
+                {getTacticIcon(clashResult.opponentTactic)}
+                <span>{clashResult.opponentTactic}</span>
+              </div>
+            )}
+            {!isChallenger && !clashResult && (
+              <div className="mt-2 text-[9px] font-mono text-brand-muted">
+                {opponentReady ? (
+                  <span className="text-green-400 font-bold flex items-center gap-0.5">
+                    <Check className="w-3 h-3" /> READY
+                  </span>
+                ) : (
+                  <span className="animate-pulse">DECIDING...</span>
+                )}
               </div>
             )}
           </div>
@@ -108,10 +147,20 @@ export function HeroClashModal({
             VS
           </div>
 
-          {/* Opponent Side */}
-          <div className="bg-[#1A1414] border-2 border-brand-red/80 rounded-xl p-2.5 flex flex-col items-center">
-            <span className="text-[9px] font-mono uppercase tracking-widest text-brand-red font-bold mb-1">
-              DEFENDER
+          {/* Defender Side */}
+          <div
+            className={`border-2 rounded-xl p-2.5 flex flex-col items-center ${
+              !isChallenger
+                ? "bg-[#1C1A00] border-brand-yellow/80"
+                : "bg-[#141414] border-[#333333]"
+            }`}
+          >
+            <span
+              className={`text-[9px] font-mono uppercase tracking-widest font-bold mb-1 ${
+                !isChallenger ? "text-brand-yellow" : "text-brand-muted"
+              }`}
+            >
+              {!isChallenger ? "DEFENDER (YOU)" : "DEFENDER"}
             </span>
             <div className="font-comic text-lg text-white uppercase truncate w-full">
               {opponentHero}
@@ -119,10 +168,27 @@ export function HeroClashModal({
             <div className="text-[11px] font-sans text-brand-muted truncate w-full">
               {opponentName}
             </div>
-            {clashResult && (
+            {!isChallenger && selectedTactic && (
+              <div className="mt-2 flex items-center gap-1 text-[10px] font-mono font-bold text-brand-yellow bg-black/60 px-2 py-0.5 rounded border border-brand-yellow/40">
+                {getTacticIcon(selectedTactic)}
+                <span>{selectedTactic}</span>
+              </div>
+            )}
+            {isChallenger && clashResult && (
               <div className="mt-2 flex items-center gap-1 text-[10px] font-mono font-bold text-red-400 bg-black/60 px-2 py-0.5 rounded border border-red-500/40">
                 {getTacticIcon(clashResult.opponentTactic)}
                 <span>{clashResult.opponentTactic}</span>
+              </div>
+            )}
+            {isChallenger && !clashResult && (
+              <div className="mt-2 text-[9px] font-mono text-brand-muted">
+                {opponentReady ? (
+                  <span className="text-green-400 font-bold flex items-center gap-0.5">
+                    <Check className="w-3 h-3" /> READY
+                  </span>
+                ) : (
+                  <span className="animate-pulse">DECIDING...</span>
+                )}
               </div>
             )}
           </div>
@@ -132,7 +198,7 @@ export function HeroClashModal({
         {!clashResult && (
           <div className="relative z-10">
             <div className="flex items-center justify-between text-xs font-mono text-brand-muted mb-2 px-1">
-              <span>TACTIC SELECTION</span>
+              <span>{selectedTactic ? "STANCE LOCKED" : "SELECT YOUR STANCE"}</span>
               <span className="font-bold text-brand-yellow">
                 ⏱️ {timeLeft}s remaining
               </span>
@@ -146,7 +212,7 @@ export function HeroClashModal({
                 type="button"
                 className={`p-3 bg-[#1E1212] hover:bg-[#2D1616] active:scale-95 border-2 rounded-xl flex flex-col items-center gap-1 transition-all ${
                   selectedTactic === "STRIKE"
-                    ? "border-red-500 shadow-[0_0_15px_#ef4444]"
+                    ? "border-red-500 shadow-[0_0_15px_#ef4444] scale-102"
                     : "border-[#3A2222] hover:border-red-500/60"
                 }`}
               >
@@ -162,7 +228,7 @@ export function HeroClashModal({
                 type="button"
                 className={`p-3 bg-[#0E1A22] hover:bg-[#142633] active:scale-95 border-2 rounded-xl flex flex-col items-center gap-1 transition-all ${
                   selectedTactic === "SHIELD"
-                    ? "border-cyan-400 shadow-[0_0_15px_#22d3ee]"
+                    ? "border-cyan-400 shadow-[0_0_15px_#22d3ee] scale-102"
                     : "border-[#1F3340] hover:border-cyan-400/60"
                 }`}
               >
@@ -178,7 +244,7 @@ export function HeroClashModal({
                 type="button"
                 className={`p-3 bg-[#242004] hover:bg-[#332D06] active:scale-95 border-2 rounded-xl flex flex-col items-center gap-1 transition-all ${
                   selectedTactic === "BLITZ"
-                    ? "border-brand-yellow shadow-[0_0_15px_#f3f000]"
+                    ? "border-brand-yellow shadow-[0_0_15px_#f3f000] scale-102"
                     : "border-[#403910] hover:border-brand-yellow/60"
                 }`}
               >
@@ -188,10 +254,14 @@ export function HeroClashModal({
               </button>
             </div>
 
-            {loading && (
-              <div className="flex items-center justify-center gap-2 text-xs font-mono text-brand-yellow animate-pulse py-2">
-                <RotateCcw className="w-4 h-4 animate-spin" />
-                <span>RESOLVING COMBAT KINETICS...</span>
+            {selectedTactic && !clashResult && (
+              <div className="flex items-center justify-center gap-2 text-xs font-mono text-brand-yellow animate-pulse py-2 bg-[#121212] rounded-xl border border-brand-yellow/30">
+                <RotateCcw className="w-4 h-4 animate-spin text-brand-yellow" />
+                <span>
+                  {opponentReady
+                    ? "BOTH PLAYERS LOCKED! RESOLVING CLASH..."
+                    : "STANCE LOCKED! WAITING FOR OPPONENT..."}
+                </span>
               </div>
             )}
           </div>
@@ -203,16 +273,16 @@ export function HeroClashModal({
             {/* Outcome Badge */}
             <div className="mb-3">
               {clashResult.outcome === "VICTORY" ? (
-                <div className="inline-block px-4 py-1 bg-green-500 text-black font-comic text-lg uppercase tracking-wider rounded-xl shadow-comic-black border-2 border-black animate-bounce">
-                  🏆 HEROIC VICTORY! +15 XP!
+                <div className="inline-block px-4 py-1.5 bg-green-500 text-black font-comic text-xl uppercase tracking-wider rounded-xl shadow-comic-black border-2 border-black animate-bounce">
+                  🏆 HEROIC VICTORY! +{clashResult.totalXpAwarded} XP!
                 </div>
               ) : clashResult.outcome === "DRAW" ? (
-                <div className="inline-block px-4 py-1 bg-amber-500 text-black font-comic text-lg uppercase tracking-wider rounded-xl shadow-comic-black border-2 border-black">
-                  ⚔️ POWER DRAW! +10 XP
+                <div className="inline-block px-4 py-1.5 bg-amber-500 text-black font-comic text-xl uppercase tracking-wider rounded-xl shadow-comic-black border-2 border-black">
+                  ⚔️ POWER DRAW! +{clashResult.totalXpAwarded} XP
                 </div>
               ) : (
-                <div className="inline-block px-4 py-1 bg-cyan-500 text-black font-comic text-lg uppercase tracking-wider rounded-xl shadow-comic-black border-2 border-black">
-                  🛡️ DEFENDED! +10 XP
+                <div className="inline-block px-4 py-1.5 bg-cyan-500 text-black font-comic text-xl uppercase tracking-wider rounded-xl shadow-comic-black border-2 border-black">
+                  🛡️ DEFENDED! +{clashResult.totalXpAwarded} XP
                 </div>
               )}
             </div>

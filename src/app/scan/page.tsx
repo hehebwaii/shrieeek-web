@@ -32,8 +32,10 @@ export default function ScannerPage() {
   const [useManualMode, setUseManualMode] = useState(false);
   const [isEventActive, setIsEventActive] = useState(true);
 
-  // Clash mini-game states
+  // Clash duel states
   const [showClashModal, setShowClashModal] = useState(false);
+  const [activeDuel, setActiveDuel] = useState<any | null>(null);
+  const [opponentReady, setOpponentReady] = useState(false);
   const [pendingPayload, setPendingPayload] = useState<{ qrToken?: string; manualCode?: string } | null>(null);
   const [currentUser, setCurrentUser] = useState<any | null>(null);
 
@@ -49,7 +51,7 @@ export default function ScannerPage() {
       .catch(() => {});
   }, []);
 
-  // Sync event config in real time
+  // Sync event config and live duel events in real time
   const { isConnected } = useEventSync({
     onConfigChange: (config) => {
       setIsEventActive(config.is_event_active);
@@ -57,6 +59,23 @@ export default function ScannerPage() {
         setError("Event scanning is currently paused by organizers.");
       } else {
         setError((prev) => (prev?.includes("paused") ? null : prev));
+      }
+    },
+    onDuelPlayerReady: (payload) => {
+      if (
+        activeDuel &&
+        payload.duelId === activeDuel.duelId &&
+        payload.participantId === activeDuel.scannedId
+      ) {
+        setOpponentReady(true);
+      }
+    },
+    onDuelResolved: (payload) => {
+      if (activeDuel && payload.duelId === activeDuel.duelId) {
+        setScanResult(payload.scannerResult);
+        if (payload.newLevelScanner && payload.newLevelScanner > (currentUser?.participant?.level || 1)) {
+          setLeveledUpLevel(payload.newLevelScanner);
+        }
       }
     },
   });
@@ -108,9 +127,10 @@ export default function ScannerPage() {
     };
   }, [useManualMode]);
 
-  const initiateScanPayload = (payload: { qrToken?: string; manualCode?: string }) => {
+  const initiateScanPayload = async (payload: { qrToken?: string; manualCode?: string }) => {
     if (loading) return;
     setError(null);
+    setLoading(true);
 
     // Pause camera while in clash
     if (html5QrCodeRef.current && html5QrCodeRef.current.isScanning) {
@@ -119,32 +139,17 @@ export default function ScannerPage() {
       } catch {}
     }
 
-    setPendingPayload(payload);
-    setShowClashModal(true);
-  };
-
-  const handleClashTacticSelect = async (tactic: ClashTactic) => {
-    if (!pendingPayload) return;
-    setLoading(true);
-    setError(null);
-
     try {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 6000);
-
-      const res = await fetch("/api/scan", {
+      const res = await fetch("/api/duel/init", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...pendingPayload, tacticChoice: tactic }),
-        signal: controller.signal,
+        body: JSON.stringify(payload),
       });
-      clearTimeout(timeoutId);
 
       const data = await res.json();
       if (!res.ok) {
-        setError(data.error || "Scan rejected.");
-        setLastPayload(pendingPayload);
-        setShowClashModal(false);
+        setError(data.error || "Scan initialization rejected.");
+        setLastPayload(payload);
         setLoading(false);
         if (html5QrCodeRef.current) {
           try {
@@ -154,15 +159,41 @@ export default function ScannerPage() {
         return;
       }
 
-      setScanResult(data);
-      setLastPayload(null);
-      if (data.leveledUp) {
-        setLeveledUpLevel(data.newLevel);
+      setActiveDuel(data.duelSession);
+      setOpponentReady(false);
+      setScanResult(null);
+      setPendingPayload(payload);
+      setShowClashModal(true);
+    } catch {
+      setError("Network connection issue. Tap below to retry scan.");
+      setLastPayload(payload);
+      if (html5QrCodeRef.current) {
+        try {
+          html5QrCodeRef.current.resume();
+        } catch {}
       }
-    } catch (err: any) {
-      setError("Weak cellular network signal. Tap below to retry sending this scan.");
-      setLastPayload(pendingPayload);
-      setShowClashModal(false);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleClashTacticSelect = async (tactic: ClashTactic) => {
+    if (!activeDuel) return;
+    setLoading(true);
+
+    try {
+      const res = await fetch("/api/duel/choice", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ duelId: activeDuel.duelId, tactic }),
+      });
+
+      const data = await res.json();
+      if (res.ok && data.duelSession?.status === "RESOLVED" && data.duelSession.scannerResult) {
+        setScanResult(data.duelSession.scannerResult);
+      }
+    } catch {
+      // Result handled by SSE broadcast
     } finally {
       setLoading(false);
     }
@@ -182,8 +213,10 @@ export default function ScannerPage() {
 
   const handleDismissClash = () => {
     setShowClashModal(false);
+    setActiveDuel(null);
     setScanResult(null);
     setPendingPayload(null);
+    setOpponentReady(false);
     setManualCode("");
     // Resume camera
     if (html5QrCodeRef.current) {
@@ -344,15 +377,17 @@ export default function ScannerPage() {
         </div>
       )}
 
-      {/* Hero Power Clash Mini-Game Battle Modal */}
-      {showClashModal && (
+      {/* Hero Power Clash Live 2-Player Battle Modal */}
+      {showClashModal && activeDuel && (
         <HeroClashModal
-          scannerName={currentUser?.participant?.display_name || "Challenger"}
-          scannerHero={currentUser?.character?.heroTitle || "SUPERHERO"}
-          opponentName={scanResult ? scanResult.scannedName : "Opponent"}
-          opponentHero={scanResult ? scanResult.scannedHero : "Superhero Defender"}
+          scannerName={activeDuel.scannerName}
+          scannerHero={activeDuel.scannerHero}
+          opponentName={activeDuel.scannedName}
+          opponentHero={activeDuel.scannedHero}
+          role="CHALLENGER"
+          opponentReady={opponentReady}
           onSelectTactic={handleClashTacticSelect}
-          clashResult={scanResult?.clashResult || null}
+          clashResult={scanResult}
           loading={loading}
           onClose={handleDismissClash}
         />
