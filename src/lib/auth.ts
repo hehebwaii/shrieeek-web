@@ -3,13 +3,10 @@ import { cookies } from "next/headers";
 import { getParticipantById } from "./db";
 import { Participant } from "./types";
 
-const JWT_SECRET = process.env.JWT_SECRET || (() => {
-  if (process.env.NODE_ENV === "production") {
-    throw new Error("JWT_SECRET environment variable is required in production. Set it in your .env.local file.");
-  }
-  console.warn("⚠️ JWT_SECRET not set — using auto-generated dev secret. Sessions will reset on restart.");
-  return require("crypto").randomBytes(32).toString("hex");
-})();
+const JWT_SECRET = process.env.JWT_SECRET || (process.env.NODE_ENV === "production" ? "" : "shrieeek-dev-jwt-deterministic-secret-2026");
+if (process.env.NODE_ENV === "production" && !process.env.JWT_SECRET) {
+  throw new Error("JWT_SECRET environment variable is required in production. Set it in your .env.local file.");
+}
 const COOKIE_NAME = "shrieeek_session";
 const ADMIN_COOKIE_NAME = "shrieeek_admin";
 
