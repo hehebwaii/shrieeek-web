@@ -32,11 +32,53 @@ export function useEventSync(options?: UseEventSyncOptions) {
   const optionsRef = useRef(options);
   optionsRef.current = options;
 
+  const handleConfigUpdate = useCallback((newConfig: EventConfig) => {
+    setConfig(newConfig);
+    const activeAnn = newConfig.active_announcement || null;
+    setAnnouncement(activeAnn);
+    optionsRef.current?.onConfigChange?.(newConfig);
+    optionsRef.current?.onAnnouncement?.(activeAnn);
+  }, []);
+
+  // Immediate REST fetch as 0ms fallback for mobile devices
+  const fetchLatestConfig = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/config?_t=${Date.now()}`, {
+        cache: "no-store",
+        headers: { "Cache-Control": "no-cache" },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.config) {
+          handleConfigUpdate(data.config);
+        }
+      }
+    } catch {}
+  }, [handleConfigUpdate]);
+
   useEffect(() => {
     let eventSource: EventSource | null = null;
     let reconnectTimeout: NodeJS.Timeout | null = null;
+    let pollInterval: NodeJS.Timeout | null = null;
     let isSubscribed = true;
 
+    // 1. Immediate fetch
+    fetchLatestConfig();
+
+    // 2. Tab focus / phone unlock re-sync
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        fetchLatestConfig();
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    // 3. Periodic fallback poll (every 6s)
+    pollInterval = setInterval(() => {
+      if (isSubscribed) fetchLatestConfig();
+    }, 6000);
+
+    // 4. Real-time SSE Stream
     function connect() {
       if (!isSubscribed) return;
 
@@ -55,19 +97,11 @@ export function useEventSync(options?: UseEventSyncOptions) {
             const data: SyncPayload = JSON.parse(event.data);
 
             if (data.type === "INIT" && data.config) {
-              setConfig(data.config);
-              const activeAnn = data.config.active_announcement || null;
-              setAnnouncement(activeAnn);
-              optionsRef.current?.onConfigChange?.(data.config);
-              optionsRef.current?.onAnnouncement?.(activeAnn);
+              handleConfigUpdate(data.config);
             } else if (data.type === "CONFIG_CHANGE") {
               const newConfig = data.payload || data.config;
               if (newConfig) {
-                setConfig(newConfig);
-                const activeAnn = newConfig.active_announcement || null;
-                setAnnouncement(activeAnn);
-                optionsRef.current?.onConfigChange?.(newConfig);
-                optionsRef.current?.onAnnouncement?.(activeAnn);
+                handleConfigUpdate(newConfig);
               }
             } else if (data.type === "ANNOUNCEMENT") {
               const ann = data.payload || null;
@@ -117,13 +151,15 @@ export function useEventSync(options?: UseEventSyncOptions) {
 
     return () => {
       isSubscribed = false;
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      if (pollInterval) clearInterval(pollInterval);
       if (reconnectTimeout) clearTimeout(reconnectTimeout);
       if (eventSource) {
         eventSource.close();
         eventSource = null;
       }
     };
-  }, []);
+  }, [fetchLatestConfig, handleConfigUpdate]);
 
-  return { isConnected, config, announcement };
+  return { isConnected, config, announcement, refreshConfig: fetchLatestConfig };
 }
