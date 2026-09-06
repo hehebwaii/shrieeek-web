@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
+<title>Hero Card #088 - Valkyrie Rex | Shrieeek '26</title>
+<!-- Tailwind CSS CDN with forms and container queries -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Google Fonts: Anton & Barlow Condensed for Comic Editorial Feel -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Anton&amp;family=Barlow+Condensed:ital,wght@0,600;0,700;0,800;0,900;1,700&amp;family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind Configuration -->
+<script data-purpose="tailwind-config">
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            comic: {
+              yellow: '#F3F000',
+              red: '#E62429',
+              dark: '#141313',
+              card: '#1c1b1b',
+              surface: '#0e0e0e',
+              border: '#2a2929',
+              lightText: '#e5e5e5'
+            }
+          },
+          fontFamily: {
+            display: ['Anton', 'impact', 'sans-serif'],
+            comic: ['"Barlow Condensed"', 'sans-serif'],
+            sans: ['Inter', 'sans-serif']
+          },
+          boxShadow: {
+            'comic-sm': '2px 2px 0px #000',
+            'comic': '4px 4px 0px #000',
+            'comic-yellow': '3px 3px 0px #F3F000',
+            'comic-red': '3px 3px 0px #000'
+          }
+        }
+      }
+    }
+  </script>
+<!-- Custom Comic Art & Halftone Styles -->
+<style data-purpose="comic-effects">
+    .halftone-bg {
+      background-image: radial-gradient(#000000 20%, transparent 20%);
+      background-position: 0 0, 4px 4px;
+      background-size: 8px 8px;
+    }
+    .speed-lines {
+      background: repeating-linear-gradient(
+        -45deg,
+        rgba(255, 255, 255, 0.05),
+        rgba(255, 255, 255, 0.05) 1px,
+        transparent 1px,
+        transparent 8px
+      );
+    }
+    .skew-badge {
+      transform: skewX(-12deg);
+    }
+    .skew-badge-reverse {
+      transform: skewX(12deg);
+    }
+  </style>
+</head>
+<body class="bg-[#0e0e0e] text-white font-comic antialiased selection:bg-[#F3F000] selection:text-black pb-28 min-h-screen">
+<!-- BEGIN: MainHeader -->
+<header class="sticky top-0 z-50 bg-[#141313] border-b-2 border-neutral-800 px-3 py-2">
+<!-- Top Navigation Row -->
+<div class="flex items-center justify-between gap-2">
+<div class="flex items-center gap-2">
+<img alt="ShrIEEEk '26 Logo" class="h-7 w-auto object-contain brightness-110 filter" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC0zHoCa_JkXUuGvWtzXwGJ7vYaklsz-LyHfw9wEpqYiLszJj8Y-1tfaiqALZ6VygIwCOzhVls41JUGR77jSEu_tLHR3OCfY0-fZTSHr6fYf5Gf7blUPAV3OG__0lt9U0uhqC0AxhTQ5iMqTfRB6W7_oamQ5GWQbsbFVprEzuvZtcRl4ACrR7cMDAcc08SToX7FJcb7voxpj2U9h_efWEJI2LZbH-Vw48MrI0V-AlKU7WR9oviZADqgvLnVxCsMTeYTaw"/>
+<span class="bg-[#E62429] text-white text-[11px] font-black tracking-wider px-1.5 py-0.5 uppercase border border-black shadow-comic-sm">
+          ISSUE #01
+        </span>
+</div>
+<!-- Header Action Icons -->
+<div class="flex items-center gap-2">
+<span class="bg-[#F3F000] text-black font-display text-xs px-2.5 py-1 tracking-wider border border-black shadow-comic-sm uppercase">
+          CARD VIEW
+        </span>
+<button aria-label="User profile" class="w-8 h-8 rounded-full bg-neutral-800 border border-neutral-600 flex items-center justify-center text-neutral-300 hover:text-white" type="button">
+<svg class="w-4 h-4" fill="currentColor" viewbox="0 0 24 24">
+<path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"></path>
+</svg>
+</button>
+</div>
+</div>
+<!-- Status Ribbon Banner -->
+<div class="mt-2 pt-1.5 border-t border-neutral-800/80 flex items-center justify-between text-[11px] font-black uppercase tracking-wider">
+<div class="flex items-center gap-1.5">
+<span class="bg-[#F3F000] text-black px-1 py-0.2 font-display text-xs">HERO CARD #088</span>
+<span class="text-neutral-400 font-bold truncate">SHRIEEEK CONVENTION EXCLUSIVE</span>
+</div>
+<div class="flex items-center gap-1 text-[#22c55e]">
+<span class="inline-block w-2 h-2 rounded-full bg-[#22c55e] animate-pulse"></span>
+<span class="text-[10px] tracking-tight">VERIFIED</span>
+</div>
+</div>
+</header>
+<!-- END: MainHeader -->
+<!-- BEGIN: MobileQuickNavigation -->
+<nav aria-label="Section Navigation" class="px-3 pt-2">
+<div class="grid grid-cols-4 gap-1.5 text-center text-xs font-black tracking-wider uppercase">
+<a class="bg-[#F3F000] text-black py-1.5 border border-black shadow-comic-sm font-bold" href="#hero-card">CARD</a>
+<a class="bg-[#1c1b1b] text-neutral-300 py-1.5 border border-neutral-700 hover:border-yellow-400" href="#stats-section">STATS</a>
+<a class="bg-[#1c1b1b] text-neutral-300 py-1.5 border border-neutral-700 hover:border-yellow-400" href="#qr-section">QR PASS</a>
+<a class="bg-[#1c1b1b] text-neutral-300 py-1.5 border border-neutral-700 hover:border-yellow-400" href="#story-section">DOSSIER</a>
+</div>
+</nav>
+<!-- END: MobileQuickNavigation -->
+<!-- BEGIN: MainContent -->
+<main class="px-3 py-3 space-y-4 max-w-md mx-auto">
+<!-- BEGIN: HeroCardSection -->
+<section class="relative bg-[#1c1b1b] border-2 border-neutral-800 shadow-comic p-2.5 rounded-sm" id="hero-card">
+<!-- Top Badges Row -->
+<div class="flex items-center justify-between mb-2">
+<div class="skew-badge bg-[#E62429] border border-black px-2.5 py-0.5 shadow-comic-sm">
+<span class="skew-badge-reverse inline-block font-display text-xs tracking-wider text-white">
+            METAHUMAN CLASS 1
+          </span>
+</div>
+<div class="skew-badge bg-[#F3F000] border border-black px-2.5 py-0.5 shadow-comic-sm">
+<span class="skew-badge-reverse inline-block font-display text-xs tracking-wider text-black flex items-center gap-1">
+            ⚡ LVL 42 // APEX HERO
+          </span>
+</div>
+</div>
+<!-- Comic Illustration Art Frame -->
+<div class="relative w-full aspect-[4/5] bg-[#F3F000] border-2 border-black overflow-hidden shadow-inner">
+<!-- Background Halftone and Comic Effects -->
+<div class="absolute inset-0 halftone-bg opacity-30"></div>
+<div class="absolute inset-0 speed-lines opacity-40 pointer-events-none"></div>
+<!-- Burst Lines Graphic Overlay -->
+<svg class="absolute inset-0 w-full h-full opacity-25" preserveaspectratio="none" viewbox="0 0 100 100">
+<polygon fill="#000" points="50,50 0,0 15,0"></polygon>
+<polygon fill="#000" points="50,50 40,0 55,0"></polygon>
+<polygon fill="#000" points="50,50 85,0 100,0"></polygon>
+<polygon fill="#000" points="50,50 100,30 100,45"></polygon>
+<polygon fill="#000" points="50,50 100,75 100,90"></polygon>
+<polygon fill="#000" points="50,50 0,35 0,50"></polygon>
+<polygon fill="#000" points="50,50 0,80 0,95"></polygon>
+</svg>
+<!-- Comic Action Sound Tag "ZAP!" -->
+<div class="absolute top-2 left-2 skew-badge bg-white border-2 border-black px-2 py-0.5 shadow-comic z-10">
+<span class="font-display text-base tracking-tighter text-black">ZAP!</span>
+</div>
+<!-- Comic Action Sound Tag "POW!" -->
+<div class="absolute top-2 right-2 -rotate-12 bg-white border-2 border-black px-2 py-0.5 shadow-comic z-10">
+<span class="font-display text-base tracking-tighter text-black">POW!</span>
+</div>
+<!-- Comic Character Graphic Canvas/Artwork Representation -->
+<div class="absolute inset-0 flex items-center justify-center">
+<!-- Stylized High-Contrast Comic Hero Graphic -->
+<svg class="w-[92%] h-[92%] object-contain filter drop-shadow-[0_6px_0_rgba(0,0,0,1)]" fill="none" viewbox="0 0 240 280" xmlns="http://www.w3.org/2000/svg">
+<!-- Dramatic Spiky Hair Silhouette -->
+<path d="M120 20 L155 35 L190 20 L175 65 L215 70 L175 98 L200 135 L160 125 L165 160 L140 145 L130 180 L110 180 L100 145 L75 160 L80 125 L40 135 L65 98 L25 70 L65 65 L50 20 L85 35 Z" fill="#141313"></path>
+<!-- Face Shield / Mask Base -->
+<path d="M60 90 L180 90 L170 170 L120 205 L70 170 Z" fill="#F8F8F8" stroke="#141313" stroke-width="4"></path>
+<!-- Hero Golden Winged Tiara / Mask Emblem -->
+<path d="M70 100 L120 70 L170 100 L145 130 L120 115 L95 130 Z" fill="#F3F000" stroke="#141313" stroke-width="4"></path>
+<path d="M100 100 L120 80 L140 100 L120 112 Z" fill="#141313"></path>
+<!-- Eyes / Mask Visor Lines -->
+<path d="M85 130 L110 132 L105 142 L80 138 Z" fill="#141313"></path>
+<path d="M155 130 L130 132 L135 142 L160 138 Z" fill="#141313"></path>
+<!-- Strong Comic Shading on Jaw & Neck -->
+<path d="M105 170 L135 170 L120 185 Z" fill="#141313"></path>
+<path d="M95 190 L145 190 L155 240 L85 240 Z" fill="#141313"></path>
+<!-- Suit Collar & Armor Shoulders -->
+<path d="M45 220 L95 195 L145 195 L195 220 L215 280 L25 280 Z" fill="#1c1b1b" stroke="#141313" stroke-width="5"></path>
+<!-- Golden Armor Accents -->
+<path d="M95 205 L120 220 L145 205 L145 250 L120 270 L95 250 Z" fill="#F3F000" stroke="#141313" stroke-width="3"></path>
+<!-- Halftone Line details in Armor -->
+<line stroke="#F3F000" stroke-width="3" x1="60" x2="85" y1="235" y2="255"></line>
+<line stroke="#F3F000" stroke-width="3" x1="180" x2="155" y1="235" y2="255"></line>
+</svg>
+</div>
+<!-- Edition Corner Badge -->
+<div class="absolute bottom-2 right-2 bg-yellow-300 border-2 border-black px-1.5 py-0.5 text-[10px] font-black text-black shadow-comic-sm">
+          FIRST ED: 1988
+        </div>
+</div>
+<!-- Character Info Card Overlay -->
+<div class="bg-[#141313] border-2 border-neutral-800 p-3 mt-2">
+<h1 class="font-display text-3xl tracking-wide uppercase text-white leading-none">
+          VALKYRIE REX
+        </h1>
+<p class="text-xs text-neutral-300 mt-1 font-sans leading-relaxed">
+          Master of sonic vibrations and speed. Unlocked by attending the 2024 Comic Summit.
+        </p>
+<!-- Meta Tag Badges -->
+<div class="mt-2.5 pt-2 border-t border-neutral-800 grid grid-cols-2 gap-x-2 gap-y-1 text-[11px] font-bold uppercase tracking-wider text-neutral-400">
+<div><span class="text-neutral-500">FACTION:</span> <span class="text-white">SOLARIS CORPS</span></div>
+<div><span class="text-neutral-500">ROLE:</span> <span class="text-[#F3F000]">STRIKER</span></div>
+<div><span class="text-neutral-500">CARD ID:</span> <span class="text-white">#849204</span></div>
+<div><span class="text-neutral-500">TIER:</span> <span class="text-[#F3F000]">SUMMIT ED.</span></div>
+</div>
+</div>
+</section>
+<!-- END: HeroCardSection -->
+<!-- BEGIN: LevelProgressSection -->
+<section class="bg-[#1c1b1b] border-2 border-neutral-800 p-3 shadow-comic">
+<div class="flex items-center justify-between mb-1.5">
+<div class="flex items-center gap-1 text-[#F3F000]">
+<span class="text-sm">🏆</span>
+<span class="font-display text-sm tracking-wider uppercase">NEXT LEVEL PROGRESS</span>
+</div>
+<span class="text-xs font-bold text-neutral-200">
+          8,450 / 10,000 XP <span class="text-[#F3F000]">(85%)</span>
+</span>
+</div>
+<!-- Comic Meter Bar -->
+<div class="w-full h-4 bg-black border border-neutral-700 p-0.5 overflow-hidden">
+<div class="h-full bg-[#F3F000] transition-all duration-500" style="width: 85%;"></div>
+</div>
+<div class="flex items-center justify-between mt-2 text-[11px] uppercase font-bold text-neutral-400">
+<span class="truncate">TIER REWARD: <span class="text-white">SONIC ECHO BLADE</span></span>
+<span class="text-[#F3F000] font-black shrink-0 ml-2">1,550 XP TO GO</span>
+</div>
+</section>
+<!-- END: LevelProgressSection -->
+<!-- BEGIN: CharacterStatsSection -->
+<section class="bg-[#1c1b1b] border-2 border-neutral-800 p-3 shadow-comic" id="stats-section">
+<div class="flex items-center justify-between border-b border-neutral-800 pb-2 mb-3">
+<div class="flex items-center gap-1.5">
+<span class="w-2.5 h-2.5 bg-[#F3F000]"></span>
+<h2 class="font-display text-base tracking-wider uppercase text-white">CHARACTER STATS</h2>
+</div>
+<span class="text-[10px] font-black uppercase text-neutral-400">MAX BASE: 100</span>
+</div>
+<!-- Stat Bars -->
+<div class="space-y-3">
+<!-- Stat: Strength -->
+<div>
+<div class="flex justify-between items-baseline mb-1">
+<span class="font-display text-sm tracking-wide text-neutral-200">STRENGTH</span>
+<span class="font-bold text-xs"><span class="text-[#F3F000] text-sm font-black">92</span><span class="text-neutral-500">/100</span></span>
+</div>
+<div class="w-full h-3 bg-black border border-neutral-700 p-0.5">
+<div class="h-full bg-[#F3F000]" style="width: 92%;"></div>
+</div>
+</div>
+<!-- Stat: Agility -->
+<div>
+<div class="flex justify-between items-baseline mb-1">
+<span class="font-display text-sm tracking-wide text-neutral-200">AGILITY</span>
+<span class="font-bold text-xs"><span class="text-[#F3F000] text-sm font-black">98</span><span class="text-neutral-500">/100</span></span>
+</div>
+<div class="w-full h-3 bg-black border border-neutral-700 p-0.5">
+<div class="h-full bg-[#F3F000]" style="width: 98%;"></div>
+</div>
+</div>
+<!-- Stat: Tech -->
+<div>
+<div class="flex justify-between items-baseline mb-1">
+<span class="font-display text-sm tracking-wide text-neutral-200">TECH</span>
+<span class="font-bold text-xs"><span class="text-[#F3F000] text-sm font-black">88</span><span class="text-neutral-500">/100</span></span>
+</div>
+<div class="w-full h-3 bg-black border border-neutral-700 p-0.5">
+<div class="h-full bg-[#F3F000]" style="width: 88%;"></div>
+</div>
+</div>
+<!-- Stat: Strategy -->
+<div>
+<div class="flex justify-between items-baseline mb-1">
+<span class="font-display text-sm tracking-wide text-neutral-200">STRATEGY</span>
+<span class="font-bold text-xs"><span class="text-[#F3F000] text-sm font-black">85</span><span class="text-neutral-500">/100</span></span>
+</div>
+<div class="w-full h-3 bg-black border border-neutral-700 p-0.5">
+<div class="h-full bg-[#F3F000]" style="width: 85%;"></div>
+</div>
+</div>
+</div>
+</section>
+<!-- END: CharacterStatsSection -->
+<!-- BEGIN: TradeQRSection -->
+<section class="bg-[#1c1b1b] border-2 border-neutral-800 p-3 shadow-comic" id="qr-section">
+<div class="bg-[#F3F000] text-black px-2.5 py-1 flex items-center justify-between font-display text-sm uppercase tracking-wide border border-black mb-2.5">
+<span>YOUR CHECK-IN &amp; TRADE QR CODE</span>
+<svg class="w-4 h-4 text-black" fill="currentColor" viewbox="0 0 24 24">
+<path d="M3 3h6v6H3zm2 2v2h2V5zm8-2h6v6h-6zm2 2v2h2V5zM3 13h6v6H3zm2 2v2h2v-2zm13-2h3v3h-3zm-5 0h3v3h-3zm2 5h3v3h-3zm-2-2h2v2h-2zm4 2h2v2h-2zm-9-5h2v2H8zm2 2h2v2h-2z"></path>
+</svg>
+</div>
+<p class="text-xs text-neutral-300 font-sans text-center px-2 mb-3">
+        Scan at event booths, merch stations, or with friends to trade cards and collect badges.
+      </p>
+<!-- Comic Framed QR Code -->
+<div class="bg-white p-3 border-2 border-black mx-auto max-w-[210px] flex flex-col items-center justify-center shadow-comic">
+<svg class="w-40 h-40" fill="#000" viewbox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+<!-- QR Top-Left Corner Box -->
+<rect fill="#000" height="28" width="28" x="5" y="5"></rect>
+<rect fill="#FFF" height="20" width="20" x="9" y="9"></rect>
+<rect fill="#000" height="12" width="12" x="13" y="13"></rect>
+<!-- QR Top-Right Corner Box -->
+<rect fill="#000" height="28" width="28" x="67" y="5"></rect>
+<rect fill="#FFF" height="20" width="20" x="71" y="9"></rect>
+<rect fill="#000" height="12" width="12" x="75" y="13"></rect>
+<!-- QR Bottom-Left Corner Box -->
+<rect fill="#000" height="28" width="28" x="5" y="67"></rect>
+<rect fill="#FFF" height="20" width="20" x="9" y="71"></rect>
+<rect fill="#000" height="12" width="12" x="13" y="75"></rect>
+<!-- QR Data Modules / Pixels -->
+<rect fill="#000" height="6" width="6" x="38" y="8"></rect>
+<rect fill="#000" height="14" width="6" x="48" y="12"></rect>
+<rect fill="#000" height="6" width="8" x="38" y="24"></rect>
+<rect fill="#000" height="8" width="8" x="8" y="38"></rect>
+<rect fill="#000" height="12" width="6" x="22" y="42"></rect>
+<rect fill="#000" height="6" width="12" x="34" y="36"></rect>
+<!-- Center Hero Emblem Red Dot in QR Code -->
+<rect fill="#E62429" height="10" width="10" x="46" y="46"></rect>
+<rect fill="#000" height="6" width="14" x="62" y="38"></rect>
+<rect fill="#000" height="10" width="10" x="82" y="42"></rect>
+<rect fill="#000" height="12" width="8" x="62" y="50"></rect>
+<rect fill="#000" height="14" width="6" x="38" y="64"></rect>
+<rect fill="#000" height="6" width="14" x="50" y="68"></rect>
+<rect fill="#000" height="8" width="12" x="40" y="84"></rect>
+<rect fill="#000" height="10" width="10" x="70" y="66"></rect>
+<rect fill="#000" height="18" width="8" x="84" y="72"></rect>
+<rect fill="#000" height="8" width="12" x="66" y="84"></rect>
+</svg>
+</div>
+<!-- ID Footer Tag -->
+<div class="mt-2.5 bg-black border border-neutral-800 px-3 py-1.5 flex items-center justify-between text-[11px] font-mono uppercase text-neutral-400">
+<span>CON-ID: <strong class="text-[#F3F000]">#849204</strong></span>
+<span class="tracking-tight text-white font-bold">COMIC SUMMIT PASS</span>
+</div>
+</section>
+<!-- END: TradeQRSection -->
+<!-- BEGIN: DossierSection -->
+<section class="bg-[#1c1b1b] border-2 border-neutral-800 p-3 shadow-comic" id="story-section">
+<div class="flex items-center justify-between border-b border-neutral-800 pb-2 mb-2">
+<h2 class="font-display text-base tracking-wider uppercase text-[#F3F000]">
+          CHARACTER STORY
+        </h2>
+<span class="bg-neutral-800 text-neutral-300 text-[10px] font-bold px-2 py-0.5 uppercase tracking-wide border border-neutral-700">
+          ORIGIN DOSSIER
+        </span>
+</div>
+<p class="text-xs text-neutral-300 font-sans leading-relaxed">
+<strong class="text-white font-comic text-sm">Origin Story:</strong> Former city defender who harnesses acoustic energy into kinetic force shields. Known across Sector Zero for protecting civilian convoys during the blackout.
+      </p>
+<!-- Badges / Stats Footer -->
+<div class="mt-3 pt-2.5 border-t border-neutral-800 grid grid-cols-3 gap-2 text-center text-xs">
+<div class="bg-black/60 p-1.5 border border-neutral-800">
+<span class="text-emerald-400 block text-sm">✓</span>
+<span class="text-[10px] font-bold text-neutral-400 leading-tight block">142 Challenges</span>
+</div>
+<div class="bg-black/60 p-1.5 border border-neutral-800">
+<span class="text-[#F3F000] font-display text-sm leading-none block">98%</span>
+<span class="text-[10px] font-bold text-neutral-400 leading-tight block">Win Rate</span>
+</div>
+<div class="bg-black/60 p-1.5 border border-neutral-800">
+<span class="text-[#E62429] font-display text-sm leading-none block">MASTER</span>
+<span class="text-[10px] font-bold text-neutral-400 leading-tight block">Badge Rank</span>
+</div>
+</div>
+</section>
+<!-- END: DossierSection -->
+</main>
+<!-- END: MainContent -->
+<!-- BEGIN: StickyBottomActionBar -->
+<aside aria-label="Main Navigation" class="fixed bottom-0 left-0 right-0 z-50 bg-[#141313] border-t-2 border-black p-2 shadow-2xl backdrop-blur-md"><div class="max-w-md mx-auto grid grid-cols-4 gap-1.5 text-center text-xs font-black tracking-wider uppercase"><a class="bg-[#F3F000] text-black py-2 border border-black shadow-comic-sm font-bold flex flex-col items-center justify-center" href="#">CARDS</a><a class="bg-[#1c1b1b] text-neutral-300 py-2 border border-neutral-700 hover:border-yellow-400 flex flex-col items-center justify-center" href="#">SCANNER</a><a class="bg-[#1c1b1b] text-neutral-300 py-2 border border-neutral-700 hover:border-yellow-400 flex flex-col items-center justify-center" href="#">LEADER</a><a class="bg-[#1c1b1b] text-neutral-300 py-2 border border-neutral-700 hover:border-yellow-400 flex flex-col items-center justify-center" href="#">PROFILE</a></div></aside>
+<!-- END: StickyBottomActionBar -->
+</body></html>

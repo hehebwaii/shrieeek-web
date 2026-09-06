@@ -1,0 +1,94 @@
+@import url('https://fonts.googleapis.com/css2?family=Anton&family=Bebas+Neue&family=Inter:wght@400;500;600;700;800&family=Work+Sans:ital,wght@0,400;0,600;0,700;0,900;1,400&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg-primary: #121212;
+  --bg-card: #1B1B1B;
+  --accent-yellow: #F3F000;
+  --accent-red: #E62429;
+}
+
+body {
+  background-color: #121212;
+  color: #F8F8F6;
+  font-family: 'Inter', 'Work Sans', sans-serif;
+  overflow-x: hidden;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Comic Halftone Dot Texture */
+.bg-halftone {
+  background-image: radial-gradient(rgba(243, 240, 0, 0.08) 1.5px, transparent 1.5px);
+  background-size: 16px 16px;
+}
+
+.bg-halftone-dense {
+  background-image: radial-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+  background-size: 8px 8px;
+}
+
+/* Comic panel border */
+.comic-panel {
+  border: 3px solid #000000;
+  box-shadow: 4px 4px 0px 0px #F3F000;
+}
+
+.comic-panel-red {
+  border: 3px solid #000000;
+  box-shadow: 4px 4px 0px 0px #E62429;
+}
+
+.comic-panel-white {
+  border: 3px solid #000000;
+  box-shadow: 4px 4px 0px 0px #FFFFFF;
+}
+
+/* Skewed Comic Badge */
+.comic-tag {
+  transform: skew(-8deg);
+  display: inline-block;
+}
+
+.comic-tag-inner {
+  transform: skew(8deg);
+  display: inline-block;
+}
+
+/* Animations */
+@keyframes comic-pop {
+  0% { transform: scale(0.8) rotate(-4deg); opacity: 0; }
+  60% { transform: scale(1.1) rotate(2deg); opacity: 1; }
+  100% { transform: scale(1) rotate(0deg); opacity: 1; }
+}
+
+.animate-comic-pop {
+  animation: comic-pop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 15px rgba(243, 240, 0, 0.4); }
+  50% { box-shadow: 0 0 30px rgba(243, 240, 0, 0.8); }
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 2s infinite ease-in-out;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #141313;
+}
+::-webkit-scrollbar-thumb {
+  background: #2C2C2C;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #F3F000;
+}
