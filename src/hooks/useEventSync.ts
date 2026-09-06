@@ -10,10 +10,7 @@ export interface SyncPayload {
     | "PARTICIPANT_RESET"
     | "SCAN_AWARDED"
     | "ROSTER_UPDATED"
-    | "ANNOUNCEMENT"
-    | "DUEL_START"
-    | "DUEL_PLAYER_READY"
-    | "DUEL_RESOLVED";
+    | "ANNOUNCEMENT";
   config?: EventConfig;
   payload?: any;
   timestamp: number;
@@ -25,9 +22,6 @@ export interface UseEventSyncOptions {
   onScanAwarded?: (payload: { scannerId: string; scannedId: string; newXp?: number; newLevel?: number }) => void;
   onRosterUpdated?: () => void;
   onAnnouncement?: (announcement: Announcement | null) => void;
-  onDuelStart?: (payload: any) => void;
-  onDuelPlayerReady?: (payload: { duelId: string; participantId: string }) => void;
-  onDuelResolved?: (payload: any) => void;
   onAnyUpdate?: (data: SyncPayload) => void;
 }
 
@@ -85,12 +79,6 @@ export function useEventSync(options?: UseEventSyncOptions) {
               optionsRef.current?.onScanAwarded?.(data.payload);
             } else if (data.type === "ROSTER_UPDATED") {
               optionsRef.current?.onRosterUpdated?.();
-            } else if (data.type === "DUEL_START") {
-              optionsRef.current?.onDuelStart?.(data.payload);
-            } else if (data.type === "DUEL_PLAYER_READY") {
-              optionsRef.current?.onDuelPlayerReady?.(data.payload);
-            } else if (data.type === "DUEL_RESOLVED") {
-              optionsRef.current?.onDuelResolved?.(data.payload);
             }
 
             optionsRef.current?.onAnyUpdate?.(data);

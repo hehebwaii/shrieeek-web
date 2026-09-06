@@ -2,12 +2,14 @@ import React from "react";
 import { Zap, Shield, Flame, Activity, Crosshair, Sparkles, Compass, Swords } from "lucide-react";
 
 interface HeroArtworkProps {
-  heroId: string;
+  heroId?: string | null;
+  characterId?: string | null;
   className?: string;
 }
 
-export const HeroArtwork: React.FC<HeroArtworkProps> = ({ heroId, className = "" }) => {
-  switch (heroId) {
+export const HeroArtwork: React.FC<HeroArtworkProps> = ({ heroId, characterId, className = "" }) => {
+  const activeId = heroId || characterId || "recruit";
+  switch (activeId) {
     case "iron-man":
       return (
         <div className={`relative flex items-center justify-center bg-gradient-to-br from-[#8B0000] via-[#500000] to-[#1a0000] overflow-hidden ${className}`}>

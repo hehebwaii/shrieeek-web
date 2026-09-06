@@ -76,20 +76,14 @@ export interface LevelTier {
   borderClass: string;
 }
 
-export interface DuelSession {
-  duelId: string;
-  scannerId: string;
-  scannedId: string;
-  scannerName: string;
-  scannerHero: string;
-  scannedName: string;
-  scannedHero: string;
-  scannerTactic?: ClashTactic;
-  scannedTactic?: ClashTactic;
-  status: "WAITING_CHOICES" | "RESOLVED" | "EXPIRED";
-  scannerResult?: ClashResult;
-  scannedResult?: ClashResult;
-  createdAt: number;
-  expiresAt: number;
+export interface CodexEntry {
+  id: string;
+  display_name: string;
+  character_id: string | null;
+  character?: CharacterInfo | null;
+  powers: string;
+  level: number;
+  scanned_at: string;
+  is_mutual_ally: boolean;
 }
 

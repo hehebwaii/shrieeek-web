@@ -12,19 +12,18 @@ import {
   RefreshCw,
   Sparkles,
   RotateCcw,
+  BookOpen,
 } from "lucide-react";
 import { Navigation } from "@/components/Navigation";
 import { LevelUpModal } from "@/components/LevelUpModal";
-import { HeroClashModal } from "@/components/HeroClashModal";
+import { HeroDiscoveryModal } from "@/components/HeroDiscoveryModal";
 import { useEventSync } from "@/hooks/useEventSync";
-import { ClashTactic } from "@/lib/types";
 
 export default function ScannerPage() {
   const router = useRouter();
   const [manualCode, setManualCode] = useState("");
   const [scanning, setScanning] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [scanResult, setScanResult] = useState<any | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [lastPayload, setLastPayload] = useState<any | null>(null);
   const [leveledUpLevel, setLeveledUpLevel] = useState<number | null>(null);
@@ -32,26 +31,12 @@ export default function ScannerPage() {
   const [useManualMode, setUseManualMode] = useState(false);
   const [isEventActive, setIsEventActive] = useState(true);
 
-  // Clash duel states
-  const [showClashModal, setShowClashModal] = useState(false);
-  const [activeDuel, setActiveDuel] = useState<any | null>(null);
-  const [opponentReady, setOpponentReady] = useState(false);
-  const [pendingPayload, setPendingPayload] = useState<{ qrToken?: string; manualCode?: string } | null>(null);
-  const [currentUser, setCurrentUser] = useState<any | null>(null);
+  // Hero Discovery Modal State
+  const [discoveredHero, setDiscoveredHero] = useState<any | null>(null);
+  const [xpAwarded, setXpAwarded] = useState(15);
+  const [showDiscoveryModal, setShowDiscoveryModal] = useState(false);
 
-  // Fetch current user details for clash HUD
-  useEffect(() => {
-    fetch("/api/auth/me")
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data) => {
-        if (data?.participant) {
-          setCurrentUser(data);
-        }
-      })
-      .catch(() => {});
-  }, []);
-
-  // Sync event config and live duel events in real time
+  // Sync event config in real time
   const { isConnected } = useEventSync({
     onConfigChange: (config) => {
       setIsEventActive(config.is_event_active);
@@ -59,23 +44,6 @@ export default function ScannerPage() {
         setError("Event scanning is currently paused by organizers.");
       } else {
         setError((prev) => (prev?.includes("paused") ? null : prev));
-      }
-    },
-    onDuelPlayerReady: (payload) => {
-      if (
-        activeDuel &&
-        payload.duelId === activeDuel.duelId &&
-        payload.participantId === activeDuel.scannedId
-      ) {
-        setOpponentReady(true);
-      }
-    },
-    onDuelResolved: (payload) => {
-      if (activeDuel && payload.duelId === activeDuel.duelId) {
-        setScanResult(payload.scannerResult);
-        if (payload.newLevelScanner && payload.newLevelScanner > (currentUser?.participant?.level || 1)) {
-          setLeveledUpLevel(payload.newLevelScanner);
-        }
       }
     },
   });
@@ -112,7 +80,9 @@ export default function ScannerPage() {
         setScanning(true);
       } catch (err: any) {
         console.warn("Camera init note:", err);
-        setCameraPermissionError("Camera not accessible on this device or permission denied. Use the manual backup code below!");
+        setCameraPermissionError(
+          "Camera not accessible on this device or permission denied. Use the manual backup code below!"
+        );
         setUseManualMode(true);
       }
     }
@@ -132,7 +102,7 @@ export default function ScannerPage() {
     setError(null);
     setLoading(true);
 
-    // Pause camera while in clash
+    // Pause camera while scanning
     if (html5QrCodeRef.current && html5QrCodeRef.current.isScanning) {
       try {
         html5QrCodeRef.current.pause();
@@ -140,7 +110,7 @@ export default function ScannerPage() {
     }
 
     try {
-      const res = await fetch("/api/duel/init", {
+      const res = await fetch("/api/scan", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
@@ -148,7 +118,7 @@ export default function ScannerPage() {
 
       const data = await res.json();
       if (!res.ok) {
-        setError(data.error || "Scan initialization rejected.");
+        setError(data.error || "Scan rejected.");
         setLastPayload(payload);
         setLoading(false);
         if (html5QrCodeRef.current) {
@@ -159,41 +129,22 @@ export default function ScannerPage() {
         return;
       }
 
-      setActiveDuel(data.duelSession);
-      setOpponentReady(false);
-      setScanResult(null);
-      setPendingPayload(payload);
-      setShowClashModal(true);
+      setDiscoveredHero(data.scanned);
+      setXpAwarded(data.xpAwarded || 15);
+      setShowDiscoveryModal(true);
+      setLastPayload(null);
+
+      if (data.leveledUp) {
+        setLeveledUpLevel(data.newLevel);
+      }
     } catch {
-      setError("Network connection issue. Tap below to retry scan.");
+      setError("Weak cellular network signal. Tap below to retry sending this scan.");
       setLastPayload(payload);
       if (html5QrCodeRef.current) {
         try {
           html5QrCodeRef.current.resume();
         } catch {}
       }
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleClashTacticSelect = async (tactic: ClashTactic) => {
-    if (!activeDuel) return;
-    setLoading(true);
-
-    try {
-      const res = await fetch("/api/duel/choice", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ duelId: activeDuel.duelId, tactic }),
-      });
-
-      const data = await res.json();
-      if (res.ok && data.duelSession?.status === "RESOLVED" && data.duelSession.scannerResult) {
-        setScanResult(data.duelSession.scannerResult);
-      }
-    } catch {
-      // Result handled by SSE broadcast
     } finally {
       setLoading(false);
     }
@@ -211,12 +162,9 @@ export default function ScannerPage() {
     initiateScanPayload({ manualCode: manualCode.trim().toUpperCase() });
   };
 
-  const handleDismissClash = () => {
-    setShowClashModal(false);
-    setActiveDuel(null);
-    setScanResult(null);
-    setPendingPayload(null);
-    setOpponentReady(false);
+  const handleDismissDiscovery = () => {
+    setShowDiscoveryModal(false);
+    setDiscoveredHero(null);
     setManualCode("");
     // Resume camera
     if (html5QrCodeRef.current) {
@@ -233,7 +181,7 @@ export default function ScannerPage() {
         <div className="flex items-center gap-2">
           <Zap className="w-4 h-4 text-brand-yellow" />
           <span className="text-xs font-mono font-bold tracking-wider uppercase text-brand-white">
-            TARGET ACQUISITION HUD
+            HERO ACQUISITION SCANNER
           </span>
           {isConnected && (
             <span className="flex items-center gap-1 text-[9px] font-mono text-green-400 bg-green-950/40 px-1.5 py-0.5 rounded border border-green-500/30">
@@ -317,7 +265,7 @@ export default function ScannerPage() {
             </div>
 
             <div className="mt-3 text-center text-xs font-mono text-brand-muted">
-              Aim camera directly at another player&apos;s QR code.
+              Aim camera directly at another attendee&apos;s QR code.
             </div>
           </div>
         ) : (
@@ -330,7 +278,8 @@ export default function ScannerPage() {
               ENTER BACKUP CODE
             </h3>
             <p className="text-xs text-brand-muted mb-4 max-w-xs mx-auto">
-              If camera is unavailable, enter the backup code shown on their card (e.g. <span className="text-brand-yellow font-mono font-bold">SHK-IRON</span>).
+              If camera is unavailable, enter the backup code shown on their card (e.g.{" "}
+              <span className="text-brand-yellow font-mono font-bold">SHK-XXXX</span>).
             </p>
 
             <form onSubmit={handleManualSubmit} className="space-y-3 max-w-xs mx-auto">
@@ -346,7 +295,7 @@ export default function ScannerPage() {
                 disabled={loading || !manualCode.trim()}
                 className="w-full py-3 bg-brand-yellow hover:bg-[#ffe600] active:scale-95 text-black font-comic text-xl uppercase tracking-wider rounded-xl shadow-comic-black border-2 border-black transition-all flex items-center justify-center gap-2 disabled:opacity-50"
               >
-                {loading ? "VALIDATING..." : "SUBMIT SCAN"}
+                {loading ? "VALIDATING..." : "DISCOVER HERO"}
                 {!loading && <ArrowRight className="w-5 h-5" />}
               </button>
             </form>
@@ -377,19 +326,12 @@ export default function ScannerPage() {
         </div>
       )}
 
-      {/* Hero Power Clash Live 2-Player Battle Modal */}
-      {showClashModal && activeDuel && (
-        <HeroClashModal
-          scannerName={activeDuel.scannerName}
-          scannerHero={activeDuel.scannerHero}
-          opponentName={activeDuel.scannedName}
-          opponentHero={activeDuel.scannedHero}
-          role="CHALLENGER"
-          opponentReady={opponentReady}
-          onSelectTactic={handleClashTacticSelect}
-          clashResult={scanResult}
-          loading={loading}
-          onClose={handleDismissClash}
+      {/* Discovered Hero Card Unlock Modal */}
+      {showDiscoveryModal && discoveredHero && (
+        <HeroDiscoveryModal
+          scannedParticipant={discoveredHero}
+          xpAwarded={xpAwarded}
+          onClose={handleDismissDiscovery}
         />
       )}
 

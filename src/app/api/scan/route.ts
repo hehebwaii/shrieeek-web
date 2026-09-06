@@ -16,7 +16,7 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { qrToken, manualCode, tacticChoice } = body;
+    const { qrToken, manualCode } = body;
 
     if (!qrToken && !manualCode) {
       return NextResponse.json(
@@ -40,14 +40,14 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Atomic scan execution & anti-abuse validation + Power Clash resolution
-    const result = await recordScanEvent(scanner.id, scannedParticipant.id, tacticChoice);
+    // Atomic scan execution & anti-abuse validation
+    const result = await recordScanEvent(scanner.id, scannedParticipant.id);
 
     if (!result.success) {
       return NextResponse.json({ error: result.error }, { status: 400 });
     }
 
-    const scannedHero = getCharacterById(scannedParticipant.character_id);
+    const hero = getCharacterById(scannedParticipant.character_id);
 
     broadcastUpdate("SCAN_AWARDED", {
       scannerId: scanner.id,
@@ -59,16 +59,18 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       success: true,
       scanner: result.scanner,
-      scannedName: scannedParticipant.display_name,
-      scannedHero: scannedHero.heroTitle,
+      scanned: {
+        id: scannedParticipant.id,
+        display_name: scannedParticipant.display_name,
+        powers: scannedParticipant.powers || hero.defaultPowers,
+        character_id: scannedParticipant.character_id,
+        level: scannedParticipant.level,
+        character: hero,
+      },
       xpAwarded: result.xpAwarded,
       newLevel: result.newLevel,
       leveledUp: result.leveledUp,
-      clashResult: result.clashResult,
-      message:
-        result.clashResult?.outcome === "VICTORY"
-          ? `Hero Power Clash Victory! +${result.xpAwarded} XP awarded!`
-          : `Scanned ${scannedParticipant.display_name} (${scannedHero.heroTitle})! +${result.xpAwarded} XP awarded!`,
+      message: `Hero Discovered! Unlocked ${scannedParticipant.display_name}'s (${hero.heroTitle}) card in your Codex! +${result.xpAwarded} XP!`,
     });
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 });

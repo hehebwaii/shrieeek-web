@@ -1,6 +1,6 @@
 import fs from "fs";
 import path from "path";
-import { Participant, ScanEvent, EventConfig, ClashTactic, ClashResult } from "./types";
+import { Participant, ScanEvent, EventConfig, CodexEntry, CharacterInfo } from "./types";
 import { getLevelFromXp } from "./progression";
 import { getCharacterById } from "./characters";
 import { createClient } from "@supabase/supabase-js";
@@ -249,17 +249,16 @@ export async function importParticipantsBatch(phoneList: { phone: string; name?:
 
 export async function recordScanEvent(
   scannerId: string,
-  scannedId: string,
-  tacticChoice?: ClashTactic
+  scannedId: string
 ): Promise<{
   success: boolean;
   error?: string;
   scanner?: Participant;
   scanned?: Participant;
+  scannedHero?: CharacterInfo;
   xpAwarded?: number;
   newLevel?: number;
   leveledUp?: boolean;
-  clashResult?: ClashResult;
 }> {
   const config = await getEventConfig();
   if (!config.is_event_active) {
@@ -277,58 +276,9 @@ export async function recordScanEvent(
     return { success: false, error: "Participant not found." };
   }
 
-  const scannerHero = getCharacterById(scanner.character_id);
   const scannedHero = getCharacterById(scanned.character_id);
+  const xpAwarded = 15; // +15 XP per discovered hero
 
-  // Determine opponent defense tactic based on hero combat profile
-  const tactics: ClashTactic[] = ["STRIKE", "SHIELD", "BLITZ"];
-  let opponentTactic: ClashTactic = "STRIKE";
-  const roll = Math.random();
-  if (scannedHero.combatClass === "MIGHT") {
-    opponentTactic = roll < 0.6 ? "STRIKE" : roll < 0.8 ? "SHIELD" : "BLITZ";
-  } else if (scannedHero.combatClass === "TECH") {
-    opponentTactic = roll < 0.6 ? "SHIELD" : roll < 0.8 ? "BLITZ" : "STRIKE";
-  } else {
-    opponentTactic = roll < 0.6 ? "BLITZ" : roll < 0.8 ? "STRIKE" : "SHIELD";
-  }
-
-  const playerTactic: ClashTactic = tacticChoice || tactics[Math.floor(Math.random() * tactics.length)];
-
-  // Resolve clash: STRIKE beats SHIELD, SHIELD beats BLITZ, BLITZ beats STRIKE
-  let outcome: "VICTORY" | "DRAW" | "DEFEAT" = "DRAW";
-  if (playerTactic === opponentTactic) {
-    outcome = "DRAW";
-  } else if (
-    (playerTactic === "STRIKE" && opponentTactic === "SHIELD") ||
-    (playerTactic === "SHIELD" && opponentTactic === "BLITZ") ||
-    (playerTactic === "BLITZ" && opponentTactic === "STRIKE")
-  ) {
-    outcome = "VICTORY";
-  } else {
-    outcome = "DEFEAT";
-  }
-
-  const xpAwarded = outcome === "VICTORY" ? 15 : 10;
-  const bonusXp = outcome === "VICTORY" ? 5 : 0;
-
-  const clashResult: ClashResult = {
-    scannerTactic: playerTactic,
-    opponentTactic,
-    outcome,
-    bonusXp,
-    totalXpAwarded: xpAwarded,
-    scannerHero: scannerHero.heroTitle,
-    opponentHero: scannedHero.heroTitle,
-    specialMove: scannerHero.specialMove,
-    impactPhrase:
-      outcome === "VICTORY"
-        ? `CRITICAL CLASH! ${scannerHero.specialMove} breached ${scannedHero.heroTitle}'s guard! +15 XP!`
-        : outcome === "DRAW"
-        ? `ENERGY DEFLECTION! Both titans clashed evenly. Standard +10 XP awarded.`
-        : `DEFENSIVE PARRY! ${scannedHero.heroTitle} defended the surge. Standard +10 XP awarded.`,
-  };
-
-  // Atomic check for duplicate scan pair
   if (supabase) {
     const scanEventId = `scan_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
     const { error: insertError } = await supabase.from("scan_events").insert({
@@ -341,7 +291,7 @@ export async function recordScanEvent(
 
     if (insertError) {
       if (insertError.code === "23505" || insertError.message.includes("unique")) {
-        return { success: false, error: `You have already scanned ${scanned.display_name}'s QR code!` };
+        return { success: false, error: `You have already discovered ${scanned.display_name}'s card!` };
       }
       return { success: false, error: insertError.message };
     }
@@ -357,14 +307,23 @@ export async function recordScanEvent(
       last_scan_at: new Date().toISOString(),
     });
 
+    // Also award +5 XP to the scanned person for being discovered
+    const scannedNewXp = scanned.xp + 5;
+    const scannedNewLevel = getLevelFromXp(scannedNewXp);
+    await updateParticipant(scannedId, {
+      xp: scannedNewXp,
+      level: scannedNewLevel,
+      last_scan_at: new Date().toISOString(),
+    });
+
     return {
       success: true,
       scanner: updatedScanner || scanner,
       scanned,
+      scannedHero,
       xpAwarded,
       newLevel,
       leveledUp,
-      clashResult,
     };
   }
 
@@ -373,7 +332,7 @@ export async function recordScanEvent(
   if (scanPairSet.has(pairKey)) {
     return {
       success: false,
-      error: `You have already scanned ${scanned.display_name}'s card! Repeat scans do not award XP.`,
+      error: `You have already discovered ${scanned.display_name}'s card! Repeat scans do not award XP.`,
     };
   }
 
@@ -386,7 +345,6 @@ export async function recordScanEvent(
     scanned_id: scannedId,
     xp_awarded: xpAwarded,
     created_at: new Date().toISOString(),
-    clash_outcome: outcome,
   };
 
   const previousLevel = scanner.level;
@@ -401,16 +359,23 @@ export async function recordScanEvent(
     db.participants[scannerIndex].level = newLevel;
     db.participants[scannerIndex].last_scan_at = new Date().toISOString();
   }
+
+  const scannedIndex = db.participants.findIndex((p) => p.id === scannedId);
+  if (scannedIndex !== -1) {
+    db.participants[scannedIndex].xp = db.participants[scannedIndex].xp + 5;
+    db.participants[scannedIndex].level = getLevelFromXp(db.participants[scannedIndex].xp);
+    db.participants[scannedIndex].last_scan_at = new Date().toISOString();
+  }
   persistLocalDbAsync();
 
   return {
     success: true,
     scanner: db.participants[scannerIndex],
     scanned,
+    scannedHero,
     xpAwarded,
     newLevel,
     leveledUp,
-    clashResult,
   };
 }
 
@@ -429,188 +394,94 @@ export async function hasAlreadyScanned(scannerId: string, scannedId: string): P
   return scanPairSet.has(pairKey);
 }
 
-export async function recordDuelScanEvent(
-  scannerId: string,
-  scannedId: string,
-  scannerTactic: ClashTactic,
-  scannedTactic: ClashTactic
-): Promise<{
-  success: boolean;
-  error?: string;
-  scanner?: Participant;
-  scanned?: Participant;
-  scannerResult?: ClashResult;
-  scannedResult?: ClashResult;
-  newLevelScanner?: number;
-  newLevelScanned?: number;
-}> {
-  const config = await getEventConfig();
-  if (!config.is_event_active) {
-    return { success: false, error: "Event scanning is currently paused by organizers." };
-  }
-
-  if (scannerId === scannedId) {
-    return { success: false, error: "Self-scan blocked: You cannot duel yourself!" };
-  }
-
-  const scanner = await getParticipantById(scannerId);
-  const scanned = await getParticipantById(scannedId);
-
-  if (!scanner || !scanned) {
-    return { success: false, error: "Participant not found." };
-  }
-
-  const scannerHero = getCharacterById(scanner.character_id);
-  const scannedHero = getCharacterById(scanned.character_id);
-
-  // Determine outcome
-  let scannerOutcome: "VICTORY" | "DRAW" | "DEFEAT" = "DRAW";
-  let scannedOutcome: "VICTORY" | "DRAW" | "DEFEAT" = "DRAW";
-
-  if (scannerTactic === scannedTactic) {
-    scannerOutcome = "DRAW";
-    scannedOutcome = "DRAW";
-  } else if (
-    (scannerTactic === "STRIKE" && scannedTactic === "SHIELD") ||
-    (scannerTactic === "SHIELD" && scannedTactic === "BLITZ") ||
-    (scannerTactic === "BLITZ" && scannedTactic === "STRIKE")
-  ) {
-    scannerOutcome = "VICTORY";
-    scannedOutcome = "DEFEAT";
-  } else {
-    scannerOutcome = "DEFEAT";
-    scannedOutcome = "VICTORY";
-  }
-
-  const scannerXp = scannerOutcome === "VICTORY" ? 15 : 10;
-  const scannedXp = scannedOutcome === "VICTORY" ? 15 : 10;
-
-  const scannerResult: ClashResult = {
-    scannerTactic,
-    opponentTactic: scannedTactic,
-    outcome: scannerOutcome,
-    bonusXp: scannerOutcome === "VICTORY" ? 5 : 0,
-    totalXpAwarded: scannerXp,
-    scannerHero: scannerHero.heroTitle,
-    opponentHero: scannedHero.heroTitle,
-    specialMove: scannerHero.specialMove,
-    impactPhrase:
-      scannerOutcome === "VICTORY"
-        ? `CRITICAL CLASH! ${scannerHero.specialMove} breached ${scannedHero.heroTitle}'s guard! +15 XP!`
-        : scannerOutcome === "DRAW"
-        ? `ENERGY DEFLECTION! Both titans clashed evenly. +10 XP awarded.`
-        : `DEFENSIVE PARRY! ${scannedHero.heroTitle} defended the surge. +10 XP awarded.`,
-  };
-
-  const scannedResult: ClashResult = {
-    scannerTactic: scannedTactic,
-    opponentTactic: scannerTactic,
-    outcome: scannedOutcome,
-    bonusXp: scannedOutcome === "VICTORY" ? 5 : 0,
-    totalXpAwarded: scannedXp,
-    scannerHero: scannedHero.heroTitle,
-    opponentHero: scannerHero.heroTitle,
-    specialMove: scannedHero.specialMove,
-    impactPhrase:
-      scannedOutcome === "VICTORY"
-        ? `TACTICAL COUNTER! ${scannedHero.specialMove} outmaneuvered ${scannerHero.heroTitle}! +15 XP!`
-        : scannedOutcome === "DRAW"
-        ? `ENERGY DEFLECTION! Both titans clashed evenly. +10 XP awarded.`
-        : `GUARD BREACHED! ${scannerHero.heroTitle} landed a powerful strike. +10 XP awarded.`,
-  };
-
+export async function getParticipantCodex(
+  scannerId: string
+): Promise<{ codex: CodexEntry[]; totalHeroes: number }> {
   if (supabase) {
-    const scanEventId = `scan_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
-    const { error: insertError } = await supabase.from("scan_events").insert({
-      id: scanEventId,
-      scanner_id: scannerId,
-      scanned_id: scannedId,
-      xp_awarded: scannerXp,
-      created_at: new Date().toISOString(),
-    });
+    // 1. Get all events where current user is scanner
+    const { data: scans } = await supabase
+      .from("scan_events")
+      .select("scanned_id, created_at")
+      .eq("scanner_id", scannerId)
+      .order("created_at", { ascending: false });
 
-    if (insertError) {
-      if (insertError.code === "23505" || insertError.message.includes("unique")) {
-        return { success: false, error: `You have already scanned ${scanned.display_name}'s QR code!` };
-      }
-      return { success: false, error: insertError.message };
+    // 2. Get all events where current user is scanned (to check mutual allies)
+    const { data: incomingScans } = await supabase
+      .from("scan_events")
+      .select("scanner_id")
+      .eq("scanned_id", scannerId);
+
+    const mutualSet = new Set((incomingScans || []).map((s) => s.scanner_id));
+
+    // 3. Get total participants count
+    const { count: totalHeroes } = await supabase
+      .from("participants")
+      .select("*", { count: "exact", head: true });
+
+    if (!scans || scans.length === 0) {
+      return { codex: [], totalHeroes: totalHeroes || 0 };
     }
 
-    const newXpScanner = scanner.xp + scannerXp;
-    const newLevelScanner = getLevelFromXp(newXpScanner);
-    const updatedScanner = await updateParticipant(scannerId, {
-      xp: newXpScanner,
-      level: newLevelScanner,
-      last_scan_at: new Date().toISOString(),
-    });
+    const scannedIds = Array.from(new Set(scans.map((s) => s.scanned_id)));
+    const { data: participants } = await supabase
+      .from("participants")
+      .select("id, display_name, character_id, powers, level")
+      .in("id", scannedIds);
 
-    const newXpScanned = scanned.xp + scannedXp;
-    const newLevelScanned = getLevelFromXp(newXpScanned);
-    const updatedScanned = await updateParticipant(scannedId, {
-      xp: newXpScanned,
-      level: newLevelScanned,
-      last_scan_at: new Date().toISOString(),
-    });
+    const participantMap = new Map((participants || []).map((p) => [p.id, p]));
 
-    return {
-      success: true,
-      scanner: updatedScanner || scanner,
-      scanned: updatedScanned || scanned,
-      scannerResult,
-      scannedResult,
-      newLevelScanner,
-      newLevelScanned,
-    };
+    const codex: CodexEntry[] = scans
+      .map((s) => {
+        const p = participantMap.get(s.scanned_id);
+        if (!p) return null;
+        const char = getCharacterById(p.character_id);
+        return {
+          id: p.id,
+          display_name: p.display_name,
+          character_id: p.character_id,
+          character: char,
+          powers: p.powers || char.defaultPowers,
+          level: p.level,
+          scanned_at: s.created_at,
+          is_mutual_ally: mutualSet.has(p.id),
+        };
+      })
+      .filter(Boolean) as CodexEntry[];
+
+    return { codex, totalHeroes: totalHeroes || 0 };
   }
 
-  const pairKey = `${scannerId}:${scannedId}`;
-  if (scanPairSet.has(pairKey)) {
-    return {
-      success: false,
-      error: `You have already scanned ${scanned.display_name}'s card! Repeat scans do not award XP.`,
-    };
-  }
-  scanPairSet.add(pairKey);
-
+  // Local Memory DB fallback
   const db = getMemoryDb();
-  const newScanEvent: ScanEvent = {
-    id: `scan_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
-    scanner_id: scannerId,
-    scanned_id: scannedId,
-    xp_awarded: scannerXp,
-    created_at: new Date().toISOString(),
-    clash_outcome: scannerOutcome,
-  };
-  db.scanEvents.push(newScanEvent);
+  const myScans = db.scanEvents
+    .filter((s) => s.scanner_id === scannerId)
+    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
-  const newXpScanner = scanner.xp + scannerXp;
-  const newLevelScanner = getLevelFromXp(newXpScanner);
-  const scannerIndex = db.participants.findIndex((p) => p.id === scannerId);
-  if (scannerIndex !== -1) {
-    db.participants[scannerIndex].xp = newXpScanner;
-    db.participants[scannerIndex].level = newLevelScanner;
-    db.participants[scannerIndex].last_scan_at = new Date().toISOString();
-  }
+  const incomingSet = new Set(
+    db.scanEvents.filter((s) => s.scanned_id === scannerId).map((s) => s.scanner_id)
+  );
 
-  const newXpScanned = scanned.xp + scannedXp;
-  const newLevelScanned = getLevelFromXp(newXpScanned);
-  const scannedIndex = db.participants.findIndex((p) => p.id === scannedId);
-  if (scannedIndex !== -1) {
-    db.participants[scannedIndex].xp = newXpScanned;
-    db.participants[scannedIndex].level = newLevelScanned;
-    db.participants[scannedIndex].last_scan_at = new Date().toISOString();
-  }
-  persistLocalDbAsync();
+  const totalHeroes = db.participants.length;
 
-  return {
-    success: true,
-    scanner: db.participants[scannerIndex],
-    scanned: db.participants[scannedIndex],
-    scannerResult,
-    scannedResult,
-    newLevelScanner,
-    newLevelScanned,
-  };
+  const codex: CodexEntry[] = myScans
+    .map((s) => {
+      const p = db.participants.find((part) => part.id === s.scanned_id);
+      if (!p) return null;
+      const char = getCharacterById(p.character_id);
+      return {
+        id: p.id,
+        display_name: p.display_name,
+        character_id: p.character_id,
+        character: char,
+        powers: p.powers || char.defaultPowers,
+        level: p.level,
+        scanned_at: s.created_at,
+        is_mutual_ally: incomingSet.has(p.id),
+      };
+    })
+    .filter(Boolean) as CodexEntry[];
+
+  return { codex, totalHeroes };
 }
 
 export async function getEventConfig(): Promise<EventConfig> {

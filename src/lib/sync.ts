@@ -19,10 +19,7 @@ export function broadcastUpdate(
     | "PARTICIPANT_RESET"
     | "SCAN_AWARDED"
     | "ROSTER_UPDATED"
-    | "ANNOUNCEMENT"
-    | "DUEL_START"
-    | "DUEL_PLAYER_READY"
-    | "DUEL_RESOLVED",
+    | "ANNOUNCEMENT",
   payload?: any
 ) {
   syncEmitter.emit("update", {

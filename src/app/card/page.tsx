@@ -13,11 +13,10 @@ import {
   AlertCircle,
   WifiOff,
 } from "lucide-react";
-import { Participant, CharacterInfo, ClashTactic, ClashResult } from "@/lib/types";
+import { Participant, CharacterInfo } from "@/lib/types";
 import { getTierForLevel, getXpInCurrentLevel, getXpProgressPercent } from "@/lib/progression";
 import { HeroArtwork } from "@/components/HeroArtwork";
 import { QRCodeDisplay } from "@/components/QRCodeDisplay";
-import { HeroClashModal } from "@/components/HeroClashModal";
 import { Navigation } from "@/components/Navigation";
 import { useEventSync } from "@/hooks/useEventSync";
 import Link from "next/link";
@@ -40,12 +39,6 @@ export default function CharacterCardPage() {
   const [rerollMessage, setRerollMessage] = useState<string | null>(null);
 
   const [isOfflineMode, setIsOfflineMode] = useState(false);
-
-  // Live 2-player Duel State on Card Page
-  const [activeDuel, setActiveDuel] = useState<any | null>(null);
-  const [opponentReady, setOpponentReady] = useState(false);
-  const [duelResult, setDuelResult] = useState<ClashResult | null>(null);
-  const [duelLoading, setDuelLoading] = useState(false);
 
   // Load from local storage immediately for 0ms offline display
   useEffect(() => {
@@ -103,7 +96,7 @@ export default function CharacterCardPage() {
     fetchSession();
   }, []);
 
-  // Real-time synchronization for Admin Resets, Scans and Live Duels
+  // Real-time synchronization for Admin Resets and Scans
   useEventSync({
     onParticipantReset: (payload) => {
       if (!payload?.participantId || payload.participantId === participant?.id) {
@@ -122,52 +115,7 @@ export default function CharacterCardPage() {
         fetchSession();
       }
     },
-    onDuelStart: (payload) => {
-      if (payload && participant && payload.scannedId === participant.id) {
-        setActiveDuel(payload);
-        setOpponentReady(false);
-        setDuelResult(null);
-      }
-    },
-    onDuelPlayerReady: (payload) => {
-      if (
-        activeDuel &&
-        payload.duelId === activeDuel.duelId &&
-        payload.participantId === activeDuel.scannerId
-      ) {
-        setOpponentReady(true);
-      }
-    },
-    onDuelResolved: (payload) => {
-      if (activeDuel && payload.duelId === activeDuel.duelId) {
-        setDuelResult(payload.scannedResult || null);
-        fetchSession();
-      }
-    },
   });
-
-  const handleSelectDuelTactic = async (tactic: ClashTactic) => {
-    if (!activeDuel) return;
-    setDuelLoading(true);
-    try {
-      await fetch("/api/duel/choice", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ duelId: activeDuel.duelId, tactic }),
-      });
-    } catch {
-      // Handled by SSE
-    } finally {
-      setDuelLoading(false);
-    }
-  };
-
-  const handleCloseDuel = () => {
-    setActiveDuel(null);
-    setDuelResult(null);
-    setOpponentReady(false);
-    fetchSession();
-  };
 
   const handleDraftHero = async () => {
     setLoading(true);
@@ -511,22 +459,6 @@ export default function CharacterCardPage() {
             </form>
           </div>
         </div>
-      )}
-
-      {/* Live Duel Modal on Card Page */}
-      {activeDuel && (
-        <HeroClashModal
-          scannerName={activeDuel.scannerName}
-          scannerHero={activeDuel.scannerHero}
-          opponentName={activeDuel.scannedName}
-          opponentHero={activeDuel.scannedHero}
-          role="DEFENDER"
-          opponentReady={opponentReady}
-          onSelectTactic={handleSelectDuelTactic}
-          clashResult={duelResult}
-          loading={duelLoading}
-          onClose={handleCloseDuel}
-        />
       )}
 
       <Navigation />
